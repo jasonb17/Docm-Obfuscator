@@ -14,7 +14,7 @@ import html
 import shutil
 import mimetypes
 import re
-import docmobfuscator
+import obfuscate_file
 from io import BytesIO
 
 
@@ -117,8 +117,8 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         if not fn:
             return (False, "Can't determine file name")
         file_ext = os.path.splitext(fn[0])[1]
-        if file_ext not in ['.zip', '.docm']:
-            return (False, "File must be .zip or .docm")
+        if file_ext not in ['.zip', '.docm','.dotm']:
+            return (False, "File must be .docm, .dotm, or .zip")
         if target_name == '':
             target_name = os.path.join(path,fn[0])
             filename_only = fn[0]
@@ -160,7 +160,7 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
         if obfuscation == '':
             return (True, "File {0} uploaded successfully with no obfuscation applied".format(filename_only))
         else:
-            docmobfuscator.obfuscate(target_name, obfuscation)
+            obfuscate_file.obfuscate_file(target_name, obfuscation)
             return (True, "File {0} uploaded successfully with {1} obfuscation applied".format(filename_only, obfuscation))
 
 
