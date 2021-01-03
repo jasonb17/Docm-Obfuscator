@@ -5,8 +5,7 @@ from random import randrange
 
 
 class Obfuscator:
-    """
-    Class to hold a file to perform obfuscation techniques on.
+    """Class to hold a file to perform obfuscation techniques on.
 
     Upon initialization, the raw bytes of the file will be retrieved and stored, and relevant metadata determined
     (So input file can be deleted after class initialization)
@@ -44,8 +43,7 @@ class Obfuscator:
             return self.obfuscate_collapse()
 
     def get_CDFH_offsets(self):
-        """
-        Get the offsets to the Central Directory File Headers for each contained file.
+        """Get the offsets to the Central Directory File Headers for each contained file.
         Returns a list of tuples [offset_to_CDFH_header, filename]
 
         """
@@ -71,8 +69,7 @@ class Obfuscator:
         return offsets
 
     def get_LFH_offsets(self):
-        """
-        Get the offsets to the Local File Headers for each contained file.
+        """Get the offsets to the Local File Headers for each contained file.
         Returns a list of tuples [offset_to_LFH_header, filename, compressed_size_of_file]
 
         """
@@ -89,16 +86,14 @@ class Obfuscator:
         return offsets
 
     def get_end_of_CDFH_offset(self):
-        """
-        Find the offset for the "End of Central Directory" Header
+        """Find the offset for the "End of Central Directory" Header
 
         """
         end_magic = b'\x50\x4b\x05\x06'
         return self.rawbytes.find(end_magic)
 
     def obfuscate_collapse(self):
-        """
-        Perform "File Buffer Collapsing" obfuscation.
+        """Perform "File Buffer Collapsing" obfuscation.
 
         The Local File Header for the malicious file/macro is embedded within the compressed file
         section of a dummy Local File Header (the dummy "compressed content" in this implementation being a series
@@ -198,8 +193,7 @@ class Obfuscator:
         return new_outbytes
 
     def obfuscate_ghost(self):
-        """
-        Perform "Ghost File" obfuscation.
+        """Perform "Ghost File" obfuscation.
 
         The Local File Header for the malicious file/macro is included normally, but no Central
         Directory File Header entry is added to point to it.
@@ -224,8 +218,7 @@ class Obfuscator:
         return new_outbytes
 
     def obfuscate_IH(self):
-        """
-        Perform "Invalid File Header" obfuscation.
+        """Perform "Invalid File Header" obfuscation.
 
         The Local File Header for the malicious file/macro is corrupted with an invalid CRC.
 

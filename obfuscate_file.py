@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
-"""
-Obfuscate a macro-containing Word doc (optionally within a .zip file)
+"""Obfuscate a macro-containing Word doc (optionally within a .zip file)
  using "File Buffer Collapsing", "Ghost File", or "Invalid Header" techniques
 
 https://arielkoren.com/blog/2020/12/24/forging-malicious-doc/
@@ -10,11 +9,10 @@ https://arielkoren.com/blog/2020/12/24/forging-malicious-doc/
 import sys
 import os
 import zipfile
-from obfuscator import Obfuscator
+from utilities.obfuscator import Obfuscator
 
 def obfuscate_file(in_file, technique):
-    """
-    Obfuscate a given file with the specified technique
+    """Obfuscate a given file with the specified technique
 
     The obfuscated output will be written to disk with its same filename.
 
@@ -50,24 +48,32 @@ def obfuscate_file(in_file, technique):
             zw.write(filename)
         zw.close()
         for filename in filenames:
-            if '.docm' not in filename:
-                os.remove(filename)
+            os.remove(filename)
 
 
 def main(argv):
-    usage = '''
-    docmobfuscator.py <in_file> <obfuscation_technique>
+    usage = '''usage: obfuscate_file.py <in_file> <obfuscation_technique>
 
-    in_file must be .docm or .zip
-    obfuscation_techniques: buffer_collapse, ghost_file, invalid_header, invalid_plus_buffer, invalid_plus_ghost
+in_file                The file to obfuscate. Can be a macro-embedded Word doc (.docm), or a .zip file
+                       containing one or more .docm
 
-    make this usage nicer
+obfuscation_technique  Obfuscation technique to use
+
+                       buffer_collapse     "File Buffer Collapse" - Macro's Local File Header is embedded  
+                                            in compressed zip section of another Local File Header
+                       ghost_file          "Ghost File" - Local File Header for macro included without corresponding
+                                            Central Directory File Header
+                       invalid_header       "Invalid File Header" - Local File Header for macro is corrupted with
+                                            invalid CRC-32
+                       invalid_plus_buffer  "Invalid File Header" applied, followed by "File Buffer Collapse"
+                       invalid_plus_ghost   "Invalid File Header" applied, followed by "Ghost File"
+    
     '''
 
     if len(argv) < 2 or len(argv) > 3:
         print(usage)
         sys.exit(2)
-    if len(argv) == 2 and argv[1] == '-h':
+    if len(argv) == 2 and (argv[1] == '-h' or argv[1] == '--help'):
         print(usage)
         sys.exit(2)
 
@@ -86,3 +92,4 @@ def main(argv):
 
 if __name__ == "__main__":
     main(sys.argv)
+

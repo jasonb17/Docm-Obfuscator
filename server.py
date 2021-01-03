@@ -15,6 +15,8 @@ import shutil
 import mimetypes
 import re
 import obfuscate_file
+import sys
+import argparse
 from io import BytesIO
 
 
@@ -321,9 +323,24 @@ class SimpleHTTPRequestHandler(http.server.BaseHTTPRequestHandler):
 
 
 def start(HandlerClass=SimpleHTTPRequestHandler,
-         ServerClass=http.server.HTTPServer):
-    http.server.test(HandlerClass, ServerClass)
+         ServerClass=http.server.HTTPServer, port=8000, bind='127.0.0.1'):
+    http.server.test(HandlerClass, ServerClass, port=port, bind=bind)
 
+
+def main(argv):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-l", "--lhost", type=str, help='The bind address to listen on')
+    parser.add_argument("-p", "--port", type=int, help='The port to listen on')
+    args = parser.parse_args()
+    if args.port and args.lhost:
+        start(port=args.port, bind=args.lhost)
+    elif args.port:
+        start(port=args.port)
+    elif args.lhost:
+        start(bind=args.lhost)
+    else:
+        start()
 
 if __name__ == "__main__":
-    start()
+    main(sys.argv)
+
