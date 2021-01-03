@@ -10,28 +10,33 @@ Obfuscate a macro-containing Word doc (optionally within a .zip file) using "Fil
 
 ```
 usage: obfuscate_file.py <in_file> <obfuscation_technique>
-
+       obfuscate_file.py unmodified.zip buffer_collapse
+       
 in_file                The file to obfuscate. Can be a macro-embedded Word doc (.docm), or a .zip file
                        containing one or more .docm
 
 obfuscation_technique  Obfuscation technique to use
 
-                       buffer_collapse     "File Buffer Collapse" - Macro's Local File Header is embedded  
-                                            in compressed zip section of another Local File Header
-                       ghost_file          "Ghost File" - Local File Header for macro included without corresponding
-                                            Central Directory File Header
-                       invalid_header       "Invalid File Header" - Local File Header for macro is corrupted with
-                                            invalid CRC-32
-                       invalid_plus_buffer  "Invalid File Header" applied, followed by "File Buffer Collapse"
-                       invalid_plus_ghost   "Invalid File Header" applied, followed by "Ghost File"
+                       buffer_collapse      "File Buffer Collapse" - Macro's Local File Header embedded
+                                             in compressed data section of another Local File Header
+                       ghost_file           "Ghost File" - Local File Header for macro included without
+                                             corresponding Central Directory File Header
+                       invalid_header       "Invalid File Header" - Local File Header for macro is 
+                                             corrupted with invalid CRC-32
+                       invalid_plus_buffer  "Invalid File Header" + "File Buffer Collapse"
+                       invalid_plus_ghost   "Invalid File Header" + "Ghost File"
     
 ```
 
 ### API Server
-Starts API server that will listen to GET/POST in below format
+Starts an API server for uploading files for obfuscation, and downloading files previously uploaded for obfuscation.
+
+An upload form is hosted at /
+
+Alternately, POST and GET requests can be made as shown below to directly obfuscate/retrieve files.
 
 ```
-usage: server_test.py [-h] [-l LHOST] [-p PORT]
+usage: server.py [-h] [-l LHOST] [-p PORT]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -41,9 +46,16 @@ optional arguments:
 
 ```
 
-### POST - Send doc/zip for obfuscation
+#### POST - Send doc/zip for obfuscation
 
 Request:
+
+cname - custom filename to save the obfuscated output with
+
+obfuscation - obfuscation technique to apply (same options as directly running obfuscate_file.py)
+
+file - raw bytes of file to upload
+
 ```
 POST / HTTP/1.1
 Host: localhost.:8000
@@ -82,7 +94,7 @@ Server: BaseHTTP/0.6 Python/3.7.3
 Date: Sat, 02 Jan 2021 18:06:05 GMT
 ```
 
-### GET - Retrieve Obfuscated doc/zip
+#### GET - Retrieve Obfuscated doc/zip
 
 ```
 GET /obfuscated_doc.docm HTTP/1.1
@@ -113,6 +125,7 @@ End Sub
 ```
 
 Without any obfuscation applied, the doc is extensively detected as malicious:
+
 ![alt text](https://github.com/jasonb17/docm_obfuscator/blob/main/images/unmodified.png?raw=true)
 
 With some of the obfuscation techniques:
@@ -131,7 +144,7 @@ With some of the obfuscation techniques:
 The file "unmodified.zip" (in the artifacts folder on this repo) contains the file "unmodified.docm" referenced above, along with 2 other files.
 No compression/store has been used.
 
-Unmodified:
+Unmodified
 
 ![alt text](https://github.com/jasonb17/docm_obfuscator/blob/main/images/unmodified_zip.png?raw=true)
 
@@ -146,13 +159,18 @@ Unmodified:
 
 ## Further Notes
 
+Sangfor Engine Zero was the only antivirus to detect files obfuscated with File Buffer Collapsing combined with another technique.
+However, Sangfor was not among the 8 vendors that detected the "Ghost File" technique; thus all the provided vendors can be bypassed with one or a combination of the included techniques.
+
 As referenced in the blog post, these techniques will result in 2 error messages upon opening the obfuscated file. Both messages must be accepted
 ("Yes" and "Open") for the macro to trigger.
 
 Error 1
+
 ![alt text](https://github.com/jasonb17/docm_obfuscator/blob/main/images/error1.png?raw=true)
 
 Error 2
+
 ![alt text](https://github.com/jasonb17/docm_obfuscator/blob/main/images/error2.png?raw=true)
 
 Interestingly, if a slightly different and equally functional Powershell command is used within the VBA macro, only Error 1 is triggered.

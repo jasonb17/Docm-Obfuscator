@@ -53,18 +53,19 @@ def obfuscate_file(in_file, technique):
 
 def main(argv):
     usage = '''usage: obfuscate_file.py <in_file> <obfuscation_technique>
+       obfuscate_file.py unmodified.zip buffer_collapse
 
 in_file                The file to obfuscate. Can be a macro-embedded Word doc (.docm), or a .zip file
                        containing one or more .docm
 
 obfuscation_technique  Obfuscation technique to use
 
-                       buffer_collapse     "File Buffer Collapse" - Macro's Local File Header is embedded  
-                                            in compressed zip section of another Local File Header
-                       ghost_file          "Ghost File" - Local File Header for macro included without corresponding
-                                            Central Directory File Header
+                       buffer_collapse      "File Buffer Collapse" - Macro's Local File Header is embedded  
+                                             in compressed zip section of another Local File Header
+                       ghost_file           "Ghost File" - Local File Header for macro included without corresponding
+                                             Central Directory File Header
                        invalid_header       "Invalid File Header" - Local File Header for macro is corrupted with
-                                            invalid CRC-32
+                                             invalid CRC-32
                        invalid_plus_buffer  "Invalid File Header" applied, followed by "File Buffer Collapse"
                        invalid_plus_ghost   "Invalid File Header" applied, followed by "Ghost File"
     
